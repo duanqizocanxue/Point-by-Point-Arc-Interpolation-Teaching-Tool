@@ -1,2 +1,25 @@
-# Point-by-Point-Arc-Interpolation-Teaching-Tool
-Used for learning or calculating arc interpolation through the point insertion method
+# 圆弧插补计算教学工具（逐点比较法）
+
+一个单文件、零依赖的数控插补原理课堂演示工具，双击 `index.html` 即可使用。
+
+## 功能
+- 第一象限顺圆 / 逆圆插补的逐步计算表（偏差 F、进给方向、偏差函数递推、终点判别）
+- 插补轨迹与理想圆弧对比图，支持播放、单步、调速演示
+- 一键载入教材例题、复制表格、导出 CSV、打印
+
+## 使用方法
+1. 下载 `index.html`
+2. 用浏览器打开（无需安装任何环境）
+3. 输入起点 (X0,Y0)、终点 (Xe,Ye)，选择顺圆/逆圆，点击"计算并绘制"
+
+> 坐标要求：第一象限内的整数坐标，且两点到原点距离相等（在同一圆弧上）。
+
+## 算法原理
+判别函数 F = X² + Y² − R² ...
+（把 docs/算法说明.md 的要点搬过来）
+
+## 许可
+代码采用 MIT License；文档采用 CC BY 4.0。
+## 备注
+离线可用，字体自动降级
+本项目由 MiMo 辅助开发
