@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>圆弧插补计算教学工具 · 逐点比较法</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f2ea; --panel:#fffdf7; --ink:#17222c; --ink-soft:#5c6b77;
+  --line:#ddd6c6; --accent:#d9480f; --accent-soft:#fbe7dc; --amber:#ffb454;
+  --green:#2e7d5b; --red:#b3261e; --mono:'JetBrains Mono',Consolas,monospace;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; line-height:1.65; color:var(--ink);
+  font-family:'Noto Sans SC','Microsoft YaHei',sans-serif;
+  background-color:var(--paper);
+  background-image:linear-gradient(rgba(120,150,175,.12) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(120,150,175,.12) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+.topbar{background:var(--ink); color:#f3efe6; padding:22px 28px;}
+.topbar-inner{max-width:1360px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap;}
+.kicker{font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber);}
+h1{margin:4px 0 0; font-size:30px; font-weight:900; letter-spacing:.01em;}
+h1 .thin{font-weight:400; font-size:19px; color:#b9c2c9; margin-left:8px;}
+.meta{display:flex; gap:8px; flex-wrap:wrap;}
+.chip{font-family:var(--mono); font-size:12px; padding:5px 11px; border:1px solid rgba(255,255,255,.28); border-radius:999px; color:#e9e2d4;}
+.wrap{max-width:1360px; margin:26px auto 40px; padding:0 22px; display:flex; flex-direction:column; gap:22px;}
+.workspace{display:grid; grid-template-columns:310px minmax(0,1fr); gap:22px;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; box-shadow:0 1px 0 rgba(23,34,44,.05);}
+.panel-title{margin:0 0 14px; font-size:15px; font-weight:700; letter-spacing:.06em; color:var(--ink);
+  border-left:4px solid var(--accent); padding-left:10px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+.panel-title .sub{font-size:12px; font-weight:400; color:var(--ink-soft); letter-spacing:0;}
+.controls .panel-title:not(:first-child){margin-top:24px;}
+.field-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+label{display:block; font-size:12px; color:var(--ink-soft); letter-spacing:.04em;}
+input[type=number]{width:100%; margin-top:5px; padding:9px 11px; font-family:var(--mono); font-size:16px;
+  border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink);}
+input[type=number]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:transparent;}
+.dir-block{margin-top:16px;}
+.dir-block .label{font-size:12px; color:var(--ink-soft); letter-spacing:.04em;}
+.radio-row{display:flex; gap:10px; margin-top:7px;}
+.radio{flex:1;}
+.radio input{display:none;}
+.radio span{display:block; text-align:center; padding:9px 6px; border:1px solid var(--line); border-radius:8px;
+  cursor:pointer; font-size:14px; background:#fff; transition:.15s;}
+.radio input:checked + span{background:var(--ink); color:#fff; border-color:var(--ink); font-weight:700;}
+.btn-row{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+.btn{flex:1; padding:11px 12px; font-size:14px; font-weight:500; font-family:inherit; cursor:pointer;
+  border:1px solid var(--ink); border-radius:8px; background:#fff; color:var(--ink); transition:.15s; white-space:nowrap;}
+.btn:hover{background:#f0ece1;}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.ghost{flex:none; width:100%; text-align:left; border-color:var(--line); font-family:var(--mono); font-size:12.5px;}
+.btn.small{flex:none; padding:6px 12px; font-size:12.5px;}
+.preset-row{display:flex; flex-direction:column; gap:8px;}
+.speed{margin-top:16px; display:block;}
+input[type=range]{width:100%; margin-top:6px; accent-color:var(--accent);}
+.msg{margin-top:16px; font-size:13px; line-height:1.55;}
+.msg:empty{display:none;}
+.msg.err{color:var(--red); background:#fbe9e7; border-left:3px solid var(--red); padding:10px 12px; border-radius:6px;}
+.msg.ok{color:#26543f; background:#e7f1ea; border-left:3px solid var(--green); padding:10px 12px; border-radius:6px;}
+.plot-panel{display:flex; flex-direction:column;}
+#plot{width:100%; height:auto; background:#fff; border:1px solid var(--line); border-radius:10px;}
+.grid{stroke:#dbe4ec; stroke-width:1;}
+.axis{stroke:#8b98a3; stroke-width:1.6;}
+.axis-label{font-family:var(--mono); font-size:15px; fill:#5c6b77;}
+.tick-label{font-family:var(--mono); font-size:11px; fill:#93a0aa;}
+.arc{fill:none; stroke:#7f97ab; stroke-width:2.2; stroke-dasharray:7 5;}
+.stairs{fill:none; stroke:#c9d3db; stroke-width:2;}
+.trail{fill:none; stroke:var(--accent); stroke-width:3; stroke-linejoin:round;}
+.pt{fill:#fff; stroke:#7f97ab; stroke-width:1.6;}
+.start{fill:var(--green);} .end{fill:var(--red);}
+.marker{fill:var(--accent); stroke:#fff; stroke-width:2.5;}
+.marker-halo{fill:var(--accent); opacity:.22;}
+.point-label{font-family:var(--mono); font-size:14px; font-weight:600;}
+.readout{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; margin-top:16px;
+  background:#2b3944; border-radius:10px; overflow:hidden;}
+.ro{background:var(--ink); padding:12px 14px;}
+.ro-k{display:block; font-size:11px; letter-spacing:.14em; color:#93a3af; text-transform:uppercase;}
+.ro-v{display:block; margin-top:3px; font-family:var(--mono); font-size:21px; font-weight:600; color:var(--amber);}
+.table-scroll{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{background:var(--ink); color:#fff; font-weight:600; padding:11px 12px; text-align:left; white-space:nowrap; font-size:12.5px; letter-spacing:.05em;}
+td{padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap;}
+tbody tr:nth-child(even){background:rgba(23,34,44,.032);}
+tbody tr.hot{background:var(--accent-soft); box-shadow:inset 4px 0 0 var(--accent);}
+td.num, th.num{font-family:var(--mono);}
+.move-cell{font-family:var(--mono); font-weight:600; color:var(--accent);}
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;}
+.card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
+.card h3{margin:0 0 10px; font-size:14px; letter-spacing:.05em;}
+.card p{margin:6px 0; font-size:13.5px; color:#33424e;}
+.formula{font-family:var(--mono); background:#f2efe6; border-radius:7px; padding:9px 12px; font-size:13px; margin:10px 0 4px; line-height:1.8;}
+.card ul{margin:8px 0 0; padding-left:18px; font-size:13px; color:#33424e;}
+footer{border-top:1px solid var(--line); padding:20px 22px 34px; text-align:center; font-size:12.5px; color:var(--ink-soft);}
+@media (max-width:980px){ .workspace{grid-template-columns:1fr;} .readout{grid-template-columns:repeat(2,1fr);} }
+@media print{
+  body{background:#fff;}
+  .topbar{background:#fff; color:#000; padding:0 0 12px;}
+  .kicker, .meta, .controls, .actions, footer{display:none !important;}
+  .wrap{margin:0; padding:0; max-width:100%;}
+  .panel{border:none; box-shadow:none; padding:8px 0;}
+  h1 .thin{color:#555;}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="kicker">CNC 插补原理 · 课堂演示工具</div>
+      <h1>圆弧插补计算工具<span class="thin">（逐点比较法）</span></h1>
+    </div>
+    <div class="meta">
+      <span class="chip">第一象限</span>
+      <span class="chip">顺圆 / 逆圆</span>
+      <span class="chip">脉冲当量 = 1</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="workspace">
+    <aside class="panel controls">
+      <h2 class="panel-title">参数设置</h2>
+      <div class="field-grid">
+        <label>起点 X0<input id="x0" type="number" step="1" min="0" value="8"></label>
+        <label>起点 Y0<input id="y0" type="number" step="1" min="0" value="6"></label>
+        <label>终点 Xe<input id="xe" type="number" step="1" min="0" value="6"></label>
+        <label>终点 Ye<input id="ye" type="number" step="1" min="0" value="8"></label>
+      </div>
+      <div class="dir-block">
+        <div class="label">圆弧方向</div>
+        <div class="radio-row">
+          <label class="radio"><input type="radio" name="dir" value="ccw" checked><span>逆圆 ↺</span></label>
+          <label class="radio"><input type="radio" name="dir" value="cw"><span>顺圆 ↻</span></label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="btn-calc" class="btn primary">计算并绘制</button>
+        <button id="btn-reset" class="btn">重置</button>
+      </div>
+
+      <h2 class="panel-title">例题</h2>
+      <div class="preset-row">
+        <button class="btn ghost preset" data-p="1">例1 · R10 逆圆 (8,6)→(6,8)</button>
+        <button class="btn ghost preset" data-p="2">例2 · R25 逆圆 (24,7)→(7,24)</button>
+        <button class="btn ghost preset" data-p="3">例3 · R10 顺圆 (6,8)→(8,6)</button>
+      </div>
+
+      <h2 class="panel-title">演示控制</h2>
+      <div class="btn-row">
+        <button id="btn-play" class="btn primary">▶ 播放</button>
+        <button id="btn-prev" class="btn">◀ 上一步</button>
+        <button id="btn-next" class="btn">下一步 ▶</button>
+      </div>
+      <label class="speed">演示速度<input id="speed" type="range" min="1" max="10" value="5"></label>
+      <div id="msg" class="msg"></div>
+    </aside>
+
+    <section class="panel plot-panel">
+      <h2 class="panel-title">插补轨迹图 <span class="sub">虚线 = 理想圆弧，折线 = 逐点进给轨迹</span></h2>
+      <svg id="plot" viewBox="0 0 760 540" role="img" aria-label="圆弧插补轨迹图"></svg>
+      <div class="readout">
+        <div class="ro"><span class="ro-k">步序</span><span class="ro-v" id="ro-step">0 / 0</span></div>
+        <div class="ro"><span class="ro-k">偏差 F</span><span class="ro-v" id="ro-f">—</span></div>
+        <div class="ro"><span class="ro-k">进给</span><span class="ro-v" id="ro-move">—</span></div>
+        <div class="ro"><span class="ro-k">当前点</span><span class="ro-v" id="ro-xy">—</span></div>
+        <div class="ro"><span class="ro-k">剩余 Σ</span><span class="ro-v" id="ro-remain">—</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2 class="panel-title">插补运算过程表
+      <span class="actions">
+        <button id="btn-copy" class="btn small">复制表格</button>
+        <button id="btn-csv" class="btn small">导出 CSV</button>
+        <button id="btn-print" class="btn small">打印</button>
+      </span>
+    </h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>序号</th><th>起点 (X,Y)</th><th>偏差 F</th><th>判别</th><th>进给</th><th>偏差函数计算</th><th>到达点 (X,Y)</th><th>Σ 余</th>
+        </tr></thead>
+        <tbody id="steps-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">判别原理与本次计算</h2>
+    <div class="cards" id="cards"></div>
+  </section>
+</main>
+
+<footer>逐点比较法（偏差判别法）圆弧插补 · 适用于数控技术课程课堂演示与作业讲解</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var PRESETS = {
+    '1': { x0:8,  y0:6,  xe:6, ye:8,  dir:'ccw' },
+    '2': { x0:24, y0:7,  xe:7, ye:24, dir:'ccw' },
+    '3': { x0:6,  y0:8,  xe:8, ye:6,  dir:'cw'  }
+  };
+
+  var state = { data:null, idx:0, timer:null, px:null, py:null };
+
+  function byId(id){ return document.getElementById(id); }
+  function $(sel){ return document.querySelector(sel); }
+  function intVal(id){
+    var el = byId(id), v = el.value.trim();
+    if(v === '' || !/^-?\d+$/.test(v)) throw new Error('输入框「' + id.toUpperCase() + '」必须是整数。');
+    var n = parseInt(v, 10);
+    if(n < 0) throw new Error('本工具限定第一象限，坐标必须 ≥ 0。');
+    return n;
+  }
+
+  /* ---------- 核心算法：逐点比较法圆弧插补 ---------- */
+  function compute(){
+    var x0 = intVal('x0'), y0 = intVal('y0'), xe = intVal('xe'), ye = intVal('ye');
+    var dirEl = document.querySelector('input[name="dir"]:checked');
+    var dir = dirEl ? dirEl.value : 'ccw';
+
+    if(x0 === 0 && y0 === 0) throw new Error('起点不能是原点 (0,0)：圆心在原点时半径为 0。');
+    if(x0 === xe && y0 === ye) throw new Error('起点与终点重合，请重新输入。');
+
+    var R2 = x0*x0 + y0*y0;
+    var Re2 = xe*xe + ye*ye;
+    var R = Math.sqrt(R2), Re = Math.sqrt(Re2);
+
+    if(Math.abs(Re - R) > 0.5){
+      throw new Error('终点到圆心距离 ' + Re.toFixed(3) + ' 与 R=' + R.toFixed(3) +
+                      ' 相差过大，两点不在同一圆弧上。请选整数坐标且满足 X²+Y² 相等。');
+    }
+    if(dir === 'ccw' && !(xe <= x0 && ye >= y0)){
+      throw new Error('第一象限逆圆要求 Xe ≤ X0 且 Ye ≥ Y0（逆时针进给时 X 减小、Y 增大）。');
+    }
+    if(dir === 'cw' && !(xe >= x0 && ye <= y0)){
+      throw new Error('第一象限顺圆要求 Xe ≥ X0 且 Ye ≤ Y0（顺时针进给时 X 增大、Y 减小）。');
+    }
+
+    var warn = '';
+    if(Re2 !== R2){
+      warn = '提示：终点不在精确整数圆上（R²=' + R2 + '，终点 Xe²+Ye²=' + Re2 +
+             '），按 R²=X0²+Y0² 计算，最终偏差 F=' + (Re2 - R2) + '。';
+    }
+
+    var N = Math.abs(x0 - xe) + Math.abs(y0 - ye);
+    var steps = [], points = [];
+    var X = x0, Y = y0, F = 0;
+    points.push({ x:X, y:Y, f:F });
+
+    for(var i = 1; i <= N; i++){
+      var move, calc, nx, ny, nF;
+      if(dir === 'ccw'){
+        if(F >= 0){
+          move = '−X'; nx = X - 1; ny = Y; nF = F - 2*X + 1;
+          calc = 'F − 2X + 1 = ' + F + ' − 2×' + X + ' + 1 = ' + nF;
+        }else{
+          move = '+Y'; nx = X; ny = Y + 1; nF = F + 2*Y + 1;
+          calc = 'F + 2Y + 1 = ' + F + ' + 2×' + Y + ' + 1 = ' + nF;
+        }
+      }else{
+        if(F >= 0){
+          move = '−Y'; nx = X; ny = Y - 1; nF = F - 2*Y + 1;
+          calc = 'F − 2Y + 1 = ' + F + ' − 2×' + Y + ' + 1 = ' + nF;
+        }else{
+          move = '+X'; nx = X + 1; ny = Y; nF = F + 2*X + 1;
+          calc = 'F + 2X + 1 = ' + F + ' + 2×' + X + ' + 1 = ' + nF;
+        }
+      }
+      steps.push({
+        i:i, fx:X, fy:Y, F:F, judge:(F >= 0 ? 'F ≥ 0' : 'F < 0'), move:move,
+        calc:calc, tx:nx, ty:ny, tF:nF, remain:N - i
+      });
+      X = nx; Y = ny; F = nF;
+      points.push({ x:X, y:Y, f:F });
+    }
+
+    if(X !== xe || Y !== ye){
+      throw new Error('按总步数运行完后到达 (' + X + ',' + Y + ')，与输入终点不一致，请检查坐标。');
+    }
+
+    return {
+      x0:x0, y0:y0, xe:xe, ye:ye, dir:dir, R:R, R2:R2, N:N,
+      steps:steps, points:points, warn:warn
+    };
+  }
+
+  /* ---------- 轨迹图 ---------- */
+  function niceTick(range){
+    var c = [1,2,5,10,20,25,50,100,200,500];
+    for(var i = 0; i < c.length; i++){ if(range / c[i] <= 11) return c[i]; }
+    return 1000;
+  }
+
+  function renderPlot(d){
+    var W = 760, H = 540, pad = 46;
+    var maxX = Math.max(d.x0, d.xe) + 1, maxY = Math.max(d.y0, d.ye) + 1;
+    var tick = niceTick(Math.max(maxX, maxY));
+    var gx = Math.ceil(maxX / tick) * tick, gy = Math.ceil(maxY / tick) * tick;
+    var s = Math.min((W - 2*pad) / gx, (H - 2*pad) / gy);
+    var px = function(x){ return +(pad + x*s).toFixed(2); };
+    var py = function(y){ return +(H - pad - y*s).toFixed(2); };
+    state.px = px; state.py = py;
+
+    var g = [], t;
+    for(t = 0; t <= gx; t += tick){
+      g.push('<line class="grid" x1="' + px(t) + '" y1="' + py(0) + '" x2="' + px(t) + '" y2="' + py(gy) + '"/>');
+    }
+    for(t = 0; t <= gy; t += tick){
+      g.push('<line class="grid" x1="' + px(0) + '" y1="' + py(t) + '" x2="' + px(gx) + '" y2="' + py(t) + '"/>');
+    }
+    for(t = 0; t <= gx; t += tick){
+      if(t > 0) g.push('<text class="tick-label" x="' + px(t) + '" y="' + (py(0) + 16) + '" text-anchor="middle">' + t + '</text>');
+    }
+    for(t = 0; t <= gy; t += tick){
+      if(t > 0) g.push('<text class="tick-label" x="' + (px(0) - 8) + '" y="' + (py(t) + 4) + '" text-anchor="end">' + t + '</text>');
+    }
+
+    g.push('<line class="axis" x1="' + px(0) + '" y1="' + py(0) + '" x2="' + px(gx) + '" y2="' + py(0) + '"/>');
+    g.push('<line class="axis" x1="' + px(0) + '" y1="' + py(0) + '" x2="' + px(0) + '" y2="' + py(gy) + '"/>');
+    g.push('<text class="axis-label" x="' + (px(gx) - 6) + '" y="' + (py(0) - 10) + '" text-anchor="end">X</text>');
+    g.push('<text class="axis-label" x="' + (px(0) + 10) + '" y="' + (py(gy) + 6) + '">Y</text>');
+    g.push('<text class="axis-label" x="' + (px(0) - 12) + '" y="' + (py(0) + 18) + '" text-anchor="end">O</text>');
+
+    var aA = Math.atan2(d.y0, d.x0), aB = Math.atan2(d.ye, d.xe);
+    var delta = d.dir === 'ccw' ? (aB - aA + 2*Math.PI) % (2*Math.PI) : (aA - aB + 2*Math.PI) % (2*Math.PI);
+    var large = delta > Math.PI ? 1 : 0;
+    var sweep = d.dir === 'ccw' ? 0 : 1;
+    var Rp = +(d.R * s).toFixed(2);
+    g.push('<path class="arc" d="M ' + px(d.x0) + ' ' + py(d.y0) +
+           ' A ' + Rp + ' ' + Rp + ' 0 ' + large + ' ' + sweep + ' ' + px(d.xe) + ' ' + py(d.ye) + '"/>');
+
+    var all = d.points.map(function(p){ return px(p.x) + ',' + py(p.y); }).join(' ');
+    g.push('<polyline class="stairs" points="' + all + '"/>');
+    g.push('<polyline id="trail" class="trail" points="' + px(d.x0) + ',' + py(d.y0) + '"/>');
+
+    for(var i = 0; i < d.points.length; i++){
+      g.push('<circle class="pt" cx="' + px(d.points[i].x) + '" cy="' + py(d.points[i].y) + '" r="3.2"/>');
+    }
+
+    g.push('<circle class="start" cx="' + px(d.x0) + '" cy="' + py(d.y0) + '" r="6.5"/>');
+    g.push('<circle class="end"   cx="' + px(d.xe) + '" cy="' + py(d.ye) + '" r="6.5"/>');
+    g.push('<text class="point-label" fill="#2e7d5b" x="' + (px(d.x0) + 10) + '" y="' + (py(d.y0) - 10) + '">A(' + d.x0 + ',' + d.y0 + ')</text>');
+    g.push('<text class="point-label" fill="#b3261e" x="' + (px(d.xe) + 10) + '" y="' + (py(d.ye) + 22) + '">B(' + d.xe + ',' + d.ye + ')</text>');
+
+    g.push('<circle id="marker-halo" class="marker-halo" cx="' + px(d.x0) + '" cy="' + py(d.y0) + '" r="16"/>');
+    g.push('<circle id="marker" class="marker" cx="' + px(d.x0) + '" cy="' + py(d.y0) + '" r="8"/>');
+
+    byId('plot').innerHTML = g.join('');
+  }
+
+  /* ---------- 过程表 ---------- */
+  function renderTable(d){
+    var rows = [];
+    for(var i = 0; i < d.steps.length; i++){
+      var s = d.steps[i];
+      rows.push(
+        '<tr data-i="' + s.i + '">' +
+          '<td class="num">' + s.i + '</td>' +
+          '<td class="num">(' + s.fx + ',' + s.fy + ')</td>' +
+          '<td class="num">' + s.F + '</td>' +
+          '<td class="num">' + s.judge + '</td>' +
+          '<td class="move-cell">' + s.move + '</td>' +
+          '<td class="num">' + s.calc + '</td>' +
+          '<td class="num">(' + s.tx + ',' + s.ty + ')</td>' +
+          '<td class="num">' + s.remain + '</td>' +
+        '</tr>'
+      );
+    }
+    byId('steps-body').innerHTML = rows.join('');
+  }
+
+  /* ---------- 公式卡片 ---------- */
+  function renderCards(d){
+    var isCCW = d.dir === 'ccw';
+    var rule1 = isCCW
+      ? 'F ≥ 0 → 进给 −X（走向圆内），ΔF = F − 2X + 1'
+      : 'F ≥ 0 → 进给 −Y（走向圆内），ΔF = F − 2Y + 1';
+    var rule2 = isCCW
+      ? 'F < 0 → 进给 +Y（走向圆外），ΔF = F + 2Y + 1'
+      : 'F < 0 → 进给 +X（走向圆外），ΔF = F + 2X + 1';
+
+    byId('cards').innerHTML =
+      '<div class="card"><h3>一、偏差判别函数</h3>' +
+        '<p>圆心在原点，动点 P(X,Y) 到圆心距离与半径比较：</p>' +
+        '<div class="formula">F = X² + Y² − R²<br>F &gt; 0 → 圆外　F = 0 → 圆上　F &lt; 0 → 圆内</div>' +
+        '<p>每走一步只需加减运算，不必开方，适合硬件实现。</p></div>' +
+
+      '<div class="card"><h3>二、进给规则（' + (isCCW ? '第一象限逆圆 ↺' : '第一象限顺圆 ↻') + '）</h3>' +
+        '<div class="formula">' + rule1 + '<br>' + rule2 + '</div>' +
+        '<p>把坐标值代入即可得到下一步的偏差，形成递推。</p></div>' +
+
+      '<div class="card"><h3>三、终点判别</h3>' +
+        '<p>采用<b>总步数判别法</b>：</p>' +
+        '<div class="formula">Σ = |X0 − Xe| + |Y0 − Ye| = ' + d.N + '<br>每进给一步 Σ ← Σ − 1，Σ = 0 即到终点</div>' +
+        '<p>本题共需 ' + d.N + ' 个脉冲当量的进给。</p></div>' +
+
+      '<div class="card"><h3>四、本次计算数据</h3>' +
+        '<ul>' +
+          '<li>起点 A(' + d.x0 + ',' + d.y0 + ')，终点 B(' + d.xe + ',' + d.ye + ')</li>' +
+          '<li>方向：' + (isCCW ? '逆圆（逆时针）' : '顺圆（顺时针）') + '</li>' +
+          '<li>R² = ' + d.x0 + '² + ' + d.y0 + '² = ' + d.R2 + '（R ≈ ' + d.R.toFixed(3) + '）</li>' +
+          '<li>总步数 N = ' + d.N + ' 步</li>' +
+          '<li>逐点比较法最大插补误差 ≤ 1 个脉冲当量</li>' +
+        '</ul></div>';
+  }
+
+  /* ---------- 演示 ---------- */
+  function setCurrent(idx){
+    if(!state.data) return;
+    var d = state.data;
+    idx = Math.max(0, Math.min(idx, d.steps.length));
+    state.idx = idx;
+
+    var p = d.points[idx];
+    if(state.px){
+      var mx = state.px(p.x), my = state.py(p.y);
+      var m = byId('marker'), h = byId('marker-halo'), tr = byId('trail');
+      if(m){ m.setAttribute('cx', mx); m.setAttribute('cy', my); }
+      if(h){ h.setAttribute('cx', mx); h.setAttribute('cy', my); }
+      if(tr){
+        tr.setAttribute('points', d.points.slice(0, idx + 1).map(function(q){
+          return state.px(q.x) + ',' + state.py(q.y);
+        }).join(' '));
+      }
+    }
+
+    byId('ro-step').textContent = idx + ' / ' + d.steps.length;
+    byId('ro-f').textContent = p.f;
+    byId('ro-xy').textContent = '(' + p.x + ',' + p.y + ')';
+    byId('ro-remain').textContent = d.steps.length - idx;
+    byId('ro-move').textContent = idx === 0 ? '—' :
+      (idx >= d.steps.length ? '已完成' : d.steps[idx].move);
+
+    var rows = byId('steps-body').children;
+    for(var i = 0; i < rows.length; i++){
+      var hot = (parseInt(rows[i].getAttribute('data-i'), 10) === idx);
+      if(hot) rows[i].className = 'hot'; else rows[i].className = '';
+    }
+  }
+
+  function intervalMs(){
+    var v = parseInt(byId('speed').value, 10) || 5;
+    return Math.max(90, 1000 - v * 90);
+  }
+  function play(){
+    if(!state.data) return;
+    if(state.idx >= state.data.steps.length) setCurrent(0);
+    stopTimer();
+    state.timer = setInterval(function(){
+      if(state.idx >= state.data.steps.length){ pause(); return; }
+      setCurrent(state.idx + 1);
+    }, intervalMs());
+    byId('btn-play').textContent = '⏸ 暂停';
+  }
+  function pause(){
+    stopTimer();
+    byId('btn-play').textContent = '▶ 播放';
+  }
+  function stopTimer(){
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+  }
+
+  /* ---------- 导出 ---------- */
+  function tableText(sep){
+    var d = state.data;
+    var head = ['序号','起点X','起点Y','偏差F','判别','进给','偏差函数计算','到达点X','到达点Y','Σ余'];
+    var lines = [head.join(sep)];
+    for(var i = 0; i < d.steps.length; i++){
+      var s = d.steps[i];
+      lines.push([s.i, s.fx, s.fy, s.F, s.judge, s.move, s.calc, s.tx, s.ty, s.remain].join(sep));
+    }
+    return lines.join('\n');
+  }
+  function copyTable(){
+    var text = tableText('\t');
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); showMsg('表格已复制到剪贴板。', true); }
+      catch(e){ showMsg('复制失败，请手动选择表格复制。', false); }
+      document.body.removeChild(ta);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showMsg('表格已复制到剪贴板。', true);
+      }, fallback);
+    }else{ fallback(); }
+  }
+  function exportCsv(){
+    var d = state.data;
+    var csv = '\uFEFF' + tableText(',');
+    var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '圆弧插补过程表_R' + Math.round(d.R) + '_' + (d.dir === 'ccw' ? '逆圆' : '顺圆') + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function showMsg(text, ok){
+    var el = byId('msg');
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+    el.textContent = text;
+  }
+
+  /* ---------- 总更新 ---------- */
+  function update(){
+    pause();
+    try{
+      var d = compute();
+      state.data = d;
+      renderPlot(d);
+      renderTable(d);
+      renderCards(d);
+      setCurrent(0);
+      showMsg(d.warn || '计算完成：共 ' + d.N + ' 步，R ≈ ' + d.R.toFixed(3) + '。点击「播放」可逐步演示进给过程。', true);
+    }catch(e){
+      state.data = null;
+      showMsg(e.message, false);
+    }
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  byId('btn-calc').addEventListener('click', update);
+  byId('btn-reset').addEventListener('click', function(){
+    var p = PRESETS['1'];
+    byId('x0').value = p.x0; byId('y0').value = p.y0;
+    byId('xe').value = p.xe; byId('ye').value = p.ye;
+    document.querySelector('input[name="dir"][value="' + p.dir + '"]').checked = true;
+    update();
+  });
+  byId('btn-play').addEventListener('click', function(){
+    if(state.timer) pause(); else play();
+  });
+  byId('btn-prev').addEventListener('click', function(){ pause(); setCurrent(state.idx - 1); });
+  byId('btn-next').addEventListener('click', function(){ pause(); setCurrent(state.idx + 1); });
+  byId('btn-copy').addEventListener('click', copyTable);
+  byId('btn-csv').addEventListener('click', exportCsv);
+  byId('btn-print').addEventListener('click', function(){ window.print(); });
+
+  ['x0','y0','xe','ye'].forEach(function(id){
+    byId(id).addEventListener('change', update);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="dir"]'), function(el){
+    el.addEventListener('change', update);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.preset'), function(btn){
+    btn.addEventListener('click', function(){
+      var p = PRESETS[btn.getAttribute('data-p')];
+      byId('x0').value = p.x0; byId('y0').value = p.y0;
+      byId('xe').value = p.xe; byId('ye').value = p.ye;
+      document.querySelector('input[name="dir"][value="' + p.dir + '"]').checked = true;
+      update();
+    });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if(e.key === 'ArrowRight'){ pause(); setCurrent(state.idx + 1); }
+    if(e.key === 'ArrowLeft'){ pause(); setCurrent(state.idx - 1); }
+    if(e.key === ' '){ e.preventDefault(); if(state.timer) pause(); else play(); }
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
